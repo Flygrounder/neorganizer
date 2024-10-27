@@ -12,7 +12,7 @@ class NoteEditor extends StatelessWidget {
       body: Padding(
         padding:
             const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
-        child: Text(note.content),
+        child: SingleChildScrollView(child: Text(note.content)),
       ),
     );
   }

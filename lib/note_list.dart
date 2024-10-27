@@ -1,38 +1,62 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:neorganizer/note_editor.dart';
+import 'package:webdav_client/webdav_client.dart';
 
-class NoteListRoute extends StatelessWidget {
+class NoteListRoute extends StatefulWidget {
   const NoteListRoute({super.key});
 
   @override
+  State<NoteListRoute> createState() => _NoteListRouteState();
+}
+
+class _NoteListRouteState extends State<NoteListRoute> {
+  final Future<List<Note>> _notes = fetchNotes();
+
+  @override
   Widget build(BuildContext context) {
-    var notes = [
-      Note(
-          title: 'Список покупок',
-          content: '* ( ) Хлеб\n'
-              '* ( ) Молоко\n',
-          lastUpdate: DateTime(2024, 10, 27)),
-      Note(
-          title: 'Работа',
-          content: '* ( ) Написать тесты\n'
-              '* ( ) Провести ревью\n',
-          lastUpdate: DateTime(2024, 10, 26)),
-      Note(
-          title: 'Учёба',
-          content: '* ( ) Написать введение к диплому\n'
-              '* ( ) Сделать ДЗ\n',
-          lastUpdate: DateTime(2024, 10, 25)),
-    ];
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Заметки'),
-      ),
-      body: Center(
-          child: Column(
-        children: notes.map((note) => NoteCard(note: note)).toList(),
-      )),
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: const Text('Заметки'),
+        ),
+        body: Center(
+          child: FutureBuilder(
+            future: _notes,
+            builder: (context, snapshot) {
+              var notes = snapshot.data ?? [];
+              return Column(
+                children: notes.map((note) => NoteCard(note: note)).toList(),
+              );
+            },
+          ),
+        ));
+  }
+
+  static Future<List<Note>> fetchNotes() async {
+    // TODO introduce settings
+    var client = newClient(
+      'XXX',
+      user: 'XXX',
+      password: 'XXX',
     );
+    var files = await client.readDir('/org');
+    var notes = <Note>[];
+    for (var file in files) {
+      var title = file.name;
+      var path = file.path;
+      var lastUpdate = file.mTime;
+      if (title == null ||
+          !title.endsWith('.norg') ||
+          path == null ||
+          lastUpdate == null) {
+        continue;
+      }
+      var content = utf8.decode(await client.read(path));
+      notes.add(Note(title: title, content: content, lastUpdate: lastUpdate));
+    }
+    return notes;
   }
 }
 
