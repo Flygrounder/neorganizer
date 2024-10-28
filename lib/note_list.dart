@@ -2,7 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:neorganizer/note_editor.dart';
+import 'package:neorganizer/top_bar.dart';
 import 'package:webdav_client/webdav_client.dart';
+
+import 'bottom_bar.dart';
 
 class NoteListRoute extends StatefulWidget {
   const NoteListRoute({super.key});
@@ -17,21 +20,20 @@ class _NoteListRouteState extends State<NoteListRoute> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: const Text('Заметки'),
+      appBar: const TopBar('Заметки'),
+      body: Center(
+        child: FutureBuilder(
+          future: _notes,
+          builder: (context, snapshot) {
+            var notes = snapshot.data ?? [];
+            return Column(
+              children: notes.map((note) => NoteCard(note: note)).toList(),
+            );
+          },
         ),
-        body: Center(
-          child: FutureBuilder(
-            future: _notes,
-            builder: (context, snapshot) {
-              var notes = snapshot.data ?? [];
-              return Column(
-                children: notes.map((note) => NoteCard(note: note)).toList(),
-              );
-            },
-          ),
-        ));
+      ),
+      bottomNavigationBar: const BottomBar(BottomBarTab.notes),
+    );
   }
 
   static Future<List<Note>> fetchNotes() async {
@@ -71,8 +73,10 @@ class NoteCard extends StatelessWidget {
         "${note.lastUpdate.day}.${note.lastUpdate.month}.${note.lastUpdate.year}";
     return GestureDetector(
       onTap: () => {
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => NoteEditor(note: note)))
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => NoteEditorRoute(note: note)))
       },
       child: Card(
           child: Column(
