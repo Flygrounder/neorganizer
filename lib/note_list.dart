@@ -7,15 +7,10 @@ import 'package:webdav_client/webdav_client.dart';
 
 import 'bottom_bar.dart';
 
-class NoteListRoute extends StatefulWidget {
-  const NoteListRoute({super.key});
-
-  @override
-  State<NoteListRoute> createState() => _NoteListRouteState();
-}
-
-class _NoteListRouteState extends State<NoteListRoute> {
+class NoteListRoute extends StatelessWidget {
   final Future<List<Note>> _notes = fetchNotes();
+
+  NoteListRoute({super.key});
 
   @override
   Widget build(BuildContext context) {

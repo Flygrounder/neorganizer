@@ -32,7 +32,7 @@ class BottomBar extends StatelessWidget {
           Widget route;
           switch (selectedTab) {
             case BottomBarTab.notes:
-              route = const NoteListRoute();
+              route = NoteListRoute();
               break;
             case BottomBarTab.settings:
               route = const SettingsRoute();
