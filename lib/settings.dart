@@ -66,7 +66,7 @@ class _SettingsFormState extends State<SettingsForm> {
 
     return Form(
       key: _formKey,
-      child: Column(
+      child: ListView(
         children: [
           TextFormField(
             decoration: const InputDecoration(hintText: 'Адрес сервера'),

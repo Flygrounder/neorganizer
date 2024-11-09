@@ -22,7 +22,7 @@ class NoteListRoute extends StatelessWidget {
           future: _notes,
           builder: (context, snapshot) {
             var notes = snapshot.data ?? [];
-            return Column(
+            return ListView(
               children: notes.map((note) => NoteCard(note: note)).toList(),
             );
           },
