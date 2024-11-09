@@ -16,7 +16,7 @@ class NoteListRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TopBar('Заметки'),
+      appBar: const TopBar('Заметки', displayBackButton: false),
       body: Center(
         child: FutureBuilder(
           future: _notes,

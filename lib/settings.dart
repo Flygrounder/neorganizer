@@ -10,7 +10,7 @@ class SettingsRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      appBar: TopBar('Настройки'),
+      appBar: TopBar('Настройки', displayBackButton: false),
       body: Padding(padding: EdgeInsets.all(16.0), child: SettingsForm()),
       bottomNavigationBar: BottomBar(BottomBarTab.settings),
     );

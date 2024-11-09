@@ -25,10 +25,6 @@ class BottomBar extends StatelessWidget {
         currentIndex: BottomBarTab.values.indexOf(currentTab),
         onTap: (current) {
           var selectedTab = BottomBarTab.values[current];
-          if (selectedTab == currentTab) {
-            return;
-          }
-
           Widget route;
           switch (selectedTab) {
             case BottomBarTab.notes:
