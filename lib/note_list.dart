@@ -54,6 +54,8 @@ class NoteListRoute extends StatelessWidget {
       var content = utf8.decode(await client.read(path));
       notes.add(Note(title: title, content: content, lastUpdate: lastUpdate));
     }
+    notes.sort(
+        (first, second) => -first.lastUpdate.compareTo(second.lastUpdate));
     return notes;
   }
 }
