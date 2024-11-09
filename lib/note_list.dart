@@ -52,7 +52,8 @@ class NoteListRoute extends StatelessWidget {
         continue;
       }
       var content = utf8.decode(await client.read(path));
-      notes.add(Note(title: title, content: content, lastUpdate: lastUpdate));
+      notes.add(Note(
+          title: title, content: content, path: path, lastUpdate: lastUpdate));
     }
     notes.sort(
         (first, second) => -first.lastUpdate.compareTo(second.lastUpdate));
@@ -103,10 +104,12 @@ class NoteCard extends StatelessWidget {
 class Note {
   final String title;
   final String content;
+  final String path;
   final DateTime lastUpdate;
 
   const Note(
       {required var this.title,
       required var this.content,
+      required var this.path,
       required var this.lastUpdate});
 }
