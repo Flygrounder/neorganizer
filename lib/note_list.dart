@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:neorganizer/note_editor.dart';
+import 'package:neorganizer/settings.dart';
 import 'package:neorganizer/top_bar.dart';
 import 'package:webdav_client/webdav_client.dart';
 
@@ -32,13 +33,13 @@ class NoteListRoute extends StatelessWidget {
   }
 
   static Future<List<Note>> fetchNotes() async {
-    // TODO introduce settings
+    var settings = await WebDavSettingsStorage.loadSettings();
     var client = newClient(
-      'XXX',
-      user: 'XXX',
-      password: 'XXX',
+      settings.address,
+      user: settings.username,
+      password: settings.password,
     );
-    var files = await client.readDir('/org');
+    var files = await client.readDir(settings.directory);
     var notes = <Note>[];
     for (var file in files) {
       var title = file.name;

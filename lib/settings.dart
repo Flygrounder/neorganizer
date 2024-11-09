@@ -25,13 +25,7 @@ class SettingsForm extends StatefulWidget {
 }
 
 class _SettingsFormState extends State<SettingsForm> {
-  static const webdavServerAddressKey = "webdav-server-address";
-  static const webdavUsernameKey = "webdav-username";
-  static const webdavPasswordKey = "webdav-password";
-  static const webdavDirectoryKey = "webdav-directory";
-
   final GlobalKey<FormState> _formKey = GlobalKey();
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final TextEditingController _serverAddressController =
       TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
@@ -43,12 +37,12 @@ class _SettingsFormState extends State<SettingsForm> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      var data = await _secureStorage.readAll();
+      var settings = await WebDavSettingsStorage.loadSettings();
       setState(() {
-        _serverAddressController.text = data[webdavServerAddressKey] ?? "";
-        _usernameController.text = data[webdavUsernameKey] ?? "";
-        _passwordController.text = data[webdavPasswordKey] ?? "";
-        _directoryController.text = data[webdavDirectoryKey] ?? "";
+        _serverAddressController.text = settings.address;
+        _usernameController.text = settings.username;
+        _passwordController.text = settings.password;
+        _directoryController.text = settings.directory;
       });
     });
   }
@@ -125,18 +119,12 @@ class _SettingsFormState extends State<SettingsForm> {
               ElevatedButton(
                   onPressed: () async {
                     if (_formKey.currentState?.validate() == true) {
-                      _secureStorage.write(
-                          key: webdavServerAddressKey,
-                          value: _serverAddressController.text);
-                      _secureStorage.write(
-                          key: webdavUsernameKey,
-                          value: _usernameController.text);
-                      _secureStorage.write(
-                          key: webdavPasswordKey,
-                          value: _passwordController.text);
-                      _secureStorage.write(
-                          key: webdavDirectoryKey,
-                          value: _directoryController.text);
+                      var settings = WebDavSettings(
+                          address: _serverAddressController.text,
+                          username: _usernameController.text,
+                          password: _passwordController.text,
+                          directory: _directoryController.text);
+                      WebDavSettingsStorage.saveSettings(settings);
                     }
                   },
                   child: const Text('Сохранить')),
@@ -166,5 +154,45 @@ class _SettingsFormState extends State<SettingsForm> {
     _passwordController.dispose();
     _directoryController.dispose();
     super.dispose();
+  }
+}
+
+class WebDavSettings {
+  final String address;
+  final String username;
+  final String password;
+  final String directory;
+
+  WebDavSettings(
+      {required this.address,
+      required this.username,
+      required this.password,
+      required this.directory});
+}
+
+class WebDavSettingsStorage {
+  static const _addressKey = "webdav-server-address";
+  static const _usernameKey = "webdav-username";
+  static const _passwordKey = "webdav-password";
+  static const _directoryKey = "webdav-directory";
+
+  static Future<void> saveSettings(WebDavSettings settings) {
+    var storage = const FlutterSecureStorage();
+    return Future.wait([
+      storage.write(key: _addressKey, value: settings.address),
+      storage.write(key: _usernameKey, value: settings.username),
+      storage.write(key: _passwordKey, value: settings.password),
+      storage.write(key: _directoryKey, value: settings.directory),
+    ]);
+  }
+
+  static Future<WebDavSettings> loadSettings() async {
+    var storage = const FlutterSecureStorage();
+    var storageMap = await storage.readAll();
+    return WebDavSettings(
+        address: storageMap[_addressKey] ?? "",
+        username: storageMap[_usernameKey] ?? "",
+        password: storageMap[_passwordKey] ?? "",
+        directory: storageMap[_directoryKey] ?? "");
   }
 }
