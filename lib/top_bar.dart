@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 class TopBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool displayBackButton;
+  final Widget? leading;
+  final List<Widget>? actions;
 
-  const TopBar(this.title, {super.key, this.displayBackButton = true});
+  const TopBar(this.title,
+      {super.key, this.displayBackButton = true, this.leading, this.actions});
 
   @override
   AppBar build(BuildContext context) {
@@ -12,6 +15,8 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: displayBackButton,
       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       title: Text(title),
+      leading: leading,
+      actions: actions,
       toolbarHeight: preferredSize.height,
     );
   }
