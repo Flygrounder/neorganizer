@@ -17,38 +17,42 @@ class NoteListRoute extends StatefulWidget {
 
 class _NoteListRouteState extends State<NoteListRoute> {
   Future<List<Note>> _notes = fetchNotes();
-  String? _selectedNote;
+  Set<String> _selectedNotes = {};
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopBar('Заметки',
+      appBar: TopBar(
+          _selectedNotes.isEmpty
+              ? 'Заметки'
+              : "Выбрано: ${_selectedNotes.length}",
           displayBackButton: false,
-          leading: (_selectedNote == null)
+          leading: (_selectedNotes.isEmpty)
               ? null
               : IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () {
                     setState(() {
-                      _selectedNote = null;
+                      _selectedNotes = {};
                     });
                   }),
-          actions: (_selectedNote == null)
+          actions: (_selectedNotes.isEmpty)
               ? []
               : [
                   IconButton(
                       onPressed: () async {
                         var settings =
                             await WebDavSettingsStorage.loadSettings();
-                        var client = newClient(settings.address,
-                            user: settings.username,
-                            password: settings.password);
-                        var note = _selectedNote;
-                        if (note != null) {
-                          await client.remove(note);
-                        }
+                        var notes = _selectedNotes;
+                        var deleteFutures = notes.map((note) {
+                          var client = newClient(settings.address,
+                              user: settings.username,
+                              password: settings.password);
+                          return client.remove(note);
+                        });
+                        await Future.wait(deleteFutures);
                         setState(() {
-                          _selectedNote = null;
+                          _selectedNotes = {};
                           _notes = fetchNotes();
                         });
                       },
@@ -61,14 +65,31 @@ class _NoteListRouteState extends State<NoteListRoute> {
             var notes = snapshot.data ?? [];
             return ListView(
               children: notes.map((note) {
+                onSelect() {
+                  setState(() {
+                    if (_selectedNotes.contains(note.path)) {
+                      _selectedNotes.remove(note.path);
+                    } else {
+                      _selectedNotes.add(note.path);
+                    }
+                  });
+                }
+
                 return NoteCard(
                   note: note,
-                  onSelect: () {
-                    setState(() {
-                      _selectedNote = note.path;
-                    });
+                  onTap: () {
+                    if (_selectedNotes.isEmpty) {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  NoteEditorRoute(note: note)));
+                    } else {
+                      onSelect();
+                    }
                   },
-                  isSelected: _selectedNote == note.path,
+                  onSelect: onSelect,
+                  isSelected: _selectedNotes.contains(note.path),
                 );
               }).toList(),
             );
@@ -148,12 +169,14 @@ class _NoteListRouteState extends State<NoteListRoute> {
 class NoteCard extends StatelessWidget {
   final Note note;
   final void Function() onSelect;
+  final void Function() onTap;
   final bool isSelected;
 
   const NoteCard(
       {super.key,
       required this.note,
       required this.onSelect,
+      required this.onTap,
       required this.isSelected});
 
   @override
@@ -161,12 +184,7 @@ class NoteCard extends StatelessWidget {
     var formattedLastUpdate =
         "${note.lastUpdate.day}.${note.lastUpdate.month}.${note.lastUpdate.year}";
     return GestureDetector(
-      onTap: () => {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => NoteEditorRoute(note: note)))
-      },
+      onTap: onTap,
       onLongPress: onSelect,
       child: Card(
           color: isSelected
