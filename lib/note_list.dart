@@ -28,6 +28,42 @@ class NoteListRoute extends StatelessWidget {
           },
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.create),
+          onPressed: () {
+            showDialog(
+                context: context,
+                builder: (context) {
+                  TextEditingController titleController =
+                      TextEditingController();
+                  return AlertDialog(
+                      title: const Text('Создание заметки'),
+                      content: TextField(
+                          controller: titleController,
+                          decoration:
+                              const InputDecoration(label: Text('Название'))),
+                      actions: [
+                        TextButton(
+                            onPressed: () async {
+                              var settings =
+                                  await WebDavSettingsStorage.loadSettings();
+                              if (context.mounted) {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => NoteEditorRoute(
+                                            note: Note(
+                                                title: titleController.text,
+                                                content: '',
+                                                path:
+                                                    "${settings.directory}/${titleController.text}.norg",
+                                                lastUpdate: DateTime.now()))));
+                              }
+                            },
+                            child: const Text('СОЗДАТЬ'))
+                      ]);
+                });
+          }),
       bottomNavigationBar: const BottomBar(BottomBarTab.notes),
     );
   }
