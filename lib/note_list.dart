@@ -17,10 +17,51 @@ class NoteListRoute extends StatefulWidget {
 
 class _NoteListRouteState extends State<NoteListRoute> {
   Future<List<Note>> _notes = fetchNotes();
-  Set<String> _selectedNotes = {};
+  Map<String, Note> _selectedNotes = {};
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> actions = [];
+    if (_selectedNotes.length == 1) {
+      actions.add(IconButton(
+          onPressed: () async {
+            var controller =
+                TextEditingController(text: _selectedNotes.values.first.title);
+            showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: Text('Переименовать'),
+                    content: TextField(
+                      controller: controller,
+                      decoration: InputDecoration(label: Text('Название')),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () {}, child: Text('Переименовать'))
+                    ],
+                  );
+                });
+          },
+          icon: const Icon(Icons.edit)));
+    }
+    if (_selectedNotes.isNotEmpty) {
+      actions.add(IconButton(
+          onPressed: () async {
+            var settings = await WebDavSettingsStorage.loadSettings();
+            var notes = _selectedNotes;
+            var deleteFutures = notes.keys.map((note) {
+              var client = newClient(settings.address,
+                  user: settings.username, password: settings.password);
+              return client.remove(note);
+            });
+            await Future.wait(deleteFutures);
+            setState(() {
+              _selectedNotes = {};
+              _notes = fetchNotes();
+            });
+          },
+          icon: const Icon(Icons.delete)));
+    }
     return Scaffold(
       appBar: TopBar(
           _selectedNotes.isEmpty
@@ -36,28 +77,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
                       _selectedNotes = {};
                     });
                   }),
-          actions: (_selectedNotes.isEmpty)
-              ? []
-              : [
-                  IconButton(
-                      onPressed: () async {
-                        var settings =
-                            await WebDavSettingsStorage.loadSettings();
-                        var notes = _selectedNotes;
-                        var deleteFutures = notes.map((note) {
-                          var client = newClient(settings.address,
-                              user: settings.username,
-                              password: settings.password);
-                          return client.remove(note);
-                        });
-                        await Future.wait(deleteFutures);
-                        setState(() {
-                          _selectedNotes = {};
-                          _notes = fetchNotes();
-                        });
-                      },
-                      icon: const Icon(Icons.delete))
-                ]),
+          actions: actions),
       body: Center(
         child: FutureBuilder(
           future: _notes,
@@ -67,10 +87,10 @@ class _NoteListRouteState extends State<NoteListRoute> {
               children: notes.map((note) {
                 onSelect() {
                   setState(() {
-                    if (_selectedNotes.contains(note.path)) {
+                    if (_selectedNotes.keys.contains(note.path)) {
                       _selectedNotes.remove(note.path);
                     } else {
-                      _selectedNotes.add(note.path);
+                      _selectedNotes.putIfAbsent(note.path, () => note);
                     }
                   });
                 }
@@ -89,7 +109,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
                     }
                   },
                   onSelect: onSelect,
-                  isSelected: _selectedNotes.contains(note.path),
+                  isSelected: _selectedNotes.keys.contains(note.path),
                 );
               }).toList(),
             );
@@ -105,7 +125,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
                   TextEditingController titleController =
                       TextEditingController();
                   return AlertDialog(
-                      title: const Text('Создание заметки'),
+                      title: const Text('Создать'),
                       content: TextField(
                           controller: titleController,
                           decoration:
