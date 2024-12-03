@@ -28,7 +28,7 @@ class _NoteEditorRouteState extends State<NoteEditorRoute> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: TopBar(widget.note.title),
+        appBar: TopBar(widget.note.getTitle()),
         body: Padding(
           padding:
               const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),

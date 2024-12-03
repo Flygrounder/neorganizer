@@ -23,21 +23,39 @@ class _NoteListRouteState extends State<NoteListRoute> {
   Widget build(BuildContext context) {
     List<Widget> actions = [];
     if (_selectedNotes.length == 1) {
+      var note = _selectedNotes.values.first;
       actions.add(IconButton(
           onPressed: () async {
-            var controller =
-                TextEditingController(text: _selectedNotes.values.first.title);
+            var newTitleController =
+                TextEditingController(text: note.getTitle());
             showDialog(
                 context: context,
                 builder: (context) {
                   return AlertDialog(
-                    title: Text('Переименовать'),
+                    title: const Text('Переименовать'),
                     content: TextField(
-                      controller: controller,
-                      decoration: InputDecoration(label: Text('Название')),
+                      controller: newTitleController,
+                      decoration:
+                          const InputDecoration(label: Text('Название')),
                     ),
                     actions: [
-                      TextButton(onPressed: () {}, child: Text('Переименовать'))
+                      TextButton(
+                          onPressed: () async {
+                            var settings =
+                                await WebDavSettingsStorage.loadSettings();
+                            var client = newClient(settings.address,
+                                user: settings.username,
+                                password: settings.password);
+                            var components = note.path.split("/");
+                            components.last = "${newTitleController.text}.norg";
+                            var newPath = components.join("/");
+                            await client.rename(note.path, newPath, false);
+                            refreshNotes();
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          child: const Text('Переименовать'))
                     ],
                   );
                 });
@@ -55,10 +73,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
               return client.remove(note);
             });
             await Future.wait(deleteFutures);
-            setState(() {
-              _selectedNotes = {};
-              _notes = fetchNotes();
-            });
+            refreshNotes();
           },
           icon: const Icon(Icons.delete)));
     }
@@ -142,7 +157,6 @@ class _NoteListRouteState extends State<NoteListRoute> {
                                     MaterialPageRoute(
                                         builder: (context) => NoteEditorRoute(
                                             note: Note(
-                                                title: title,
                                                 content: '',
                                                 path:
                                                     "${settings.directory}/$title",
@@ -155,6 +169,13 @@ class _NoteListRouteState extends State<NoteListRoute> {
           }),
       bottomNavigationBar: const BottomBar(BottomBarTab.notes),
     );
+  }
+
+  void refreshNotes() {
+    setState(() {
+      _notes = fetchNotes();
+      _selectedNotes = {};
+    });
   }
 
   static Future<List<Note>> fetchNotes() async {
@@ -177,8 +198,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
         continue;
       }
       var content = utf8.decode(await client.read(path));
-      notes.add(Note(
-          title: title, content: content, path: path, lastUpdate: lastUpdate));
+      notes.add(Note(content: content, path: path, lastUpdate: lastUpdate));
     }
     notes.sort(
         (first, second) => -first.lastUpdate.compareTo(second.lastUpdate));
@@ -213,7 +233,7 @@ class NoteCard extends StatelessWidget {
           child: Column(
             children: [
               ListTile(
-                title: Text(note.title),
+                title: Text(note.getTitle()),
               ),
               Padding(
                 padding: const EdgeInsets.all(10),
@@ -234,14 +254,22 @@ class NoteCard extends StatelessWidget {
 }
 
 class Note {
-  final String title;
-  final String content;
   final String path;
+  final String content;
   final DateTime lastUpdate;
 
   const Note(
-      {required var this.title,
+      {required var this.path,
       required var this.content,
-      required var this.path,
       required var this.lastUpdate});
+
+  String getTitle() {
+    const neorgExtension = ".norg";
+    var filename = path.split("/").last;
+    if (filename.endsWith(neorgExtension)) {
+      return filename.substring(0, filename.length - neorgExtension.length);
+    } else {
+      return filename;
+    }
+  }
 }
