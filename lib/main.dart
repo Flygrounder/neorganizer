@@ -16,7 +16,7 @@ class NeorganizerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
         useMaterial3: true,
       ),
-      home: NoteListRoute(),
+      home: const NoteListRoute(),
     );
   }
 }

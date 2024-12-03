@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:neorganizer/files.dart';
 import 'package:neorganizer/note_editor.dart';
 import 'package:neorganizer/settings.dart';
 import 'package:neorganizer/top_bar.dart';
@@ -50,7 +51,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
                             components.last = "${newTitleController.text}.norg";
                             var newPath = components.join("/");
                             await client.rename(note.path, newPath, false);
-                            refreshNotes();
+                            await refreshNotes();
                             if (context.mounted) {
                               Navigator.of(context).pop();
                             }
@@ -171,7 +172,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
     );
   }
 
-  void refreshNotes() {
+  Future<void> refreshNotes() async {
     setState(() {
       _notes = fetchNotes();
       _selectedNotes = {};
@@ -179,6 +180,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
   }
 
   static Future<List<Note>> fetchNotes() async {
+    LocalFileStorage.syncFiles();
     var settings = await WebDavSettingsStorage.loadSettings();
     var client = newClient(
       settings.address,
