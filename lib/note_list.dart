@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:neorganizer/files.dart';
@@ -18,8 +16,14 @@ class NoteListRoute extends StatefulWidget {
 }
 
 class _NoteListRouteState extends State<NoteListRoute> {
-  Future<List<Note>> _notes = fetchNotes();
+  List<Note> _notes = [];
   Map<String, Note> _selectedNotes = {};
+
+  @override
+  void initState() {
+    super.initState();
+    refreshNotes();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +80,7 @@ class _NoteListRouteState extends State<NoteListRoute> {
               return client.remove(note);
             });
             await Future.wait(deleteFutures);
-            refreshNotes();
+            await refreshNotes();
           },
           icon: const Icon(Icons.delete)));
     }
@@ -97,43 +101,35 @@ class _NoteListRouteState extends State<NoteListRoute> {
                   }),
           actions: actions),
       body: Center(
-        child: FutureBuilder(
-          future: _notes,
-          builder: (context, snapshot) {
-            var notes = snapshot.data ?? [];
-            return ListView(
-              children: notes.map((note) {
-                onSelect() {
-                  setState(() {
-                    if (_selectedNotes.keys.contains(note.path)) {
-                      _selectedNotes.remove(note.path);
-                    } else {
-                      _selectedNotes.putIfAbsent(note.path, () => note);
-                    }
-                  });
-                }
+          child: ListView(
+        children: _notes.map((note) {
+          onSelect() {
+            setState(() {
+              if (_selectedNotes.keys.contains(note.path)) {
+                _selectedNotes.remove(note.path);
+              } else {
+                _selectedNotes.putIfAbsent(note.path, () => note);
+              }
+            });
+          }
 
-                return NoteCard(
-                  note: note,
-                  onTap: () {
-                    if (_selectedNotes.isEmpty) {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  NoteEditorRoute(note: note)));
-                    } else {
-                      onSelect();
-                    }
-                  },
-                  onSelect: onSelect,
-                  isSelected: _selectedNotes.keys.contains(note.path),
-                );
-              }).toList(),
-            );
-          },
-        ),
-      ),
+          return NoteCard(
+            note: note,
+            onTap: () {
+              if (_selectedNotes.isEmpty) {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => NoteEditorRoute(note: note)));
+              } else {
+                onSelect();
+              }
+            },
+            onSelect: onSelect,
+            isSelected: _selectedNotes.keys.contains(note.path),
+          );
+        }).toList(),
+      )),
       floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.create),
           onPressed: () {
@@ -176,41 +172,19 @@ class _NoteListRouteState extends State<NoteListRoute> {
   }
 
   Future<void> refreshNotes() async {
+    var storage = GetIt.I.get<NoteStorage>();
+
+    var notes = await storage.getNotes();
     setState(() {
-      _notes = fetchNotes();
+      _notes = notes;
       _selectedNotes = {};
     });
-  }
-
-  static Future<List<Note>> fetchNotes() async {
-    var noteStorage = GetIt.I.get<NoteStorage>();
-    await noteStorage.syncFiles();
-
-    var webDavSettingsStorage = GetIt.I.get<WebDavSettingsStorage>();
-    var settings = await webDavSettingsStorage.loadSettings();
-    var client = newClient(
-      settings.address,
-      user: settings.username,
-      password: settings.password,
-    );
-    var files = await client.readDir(settings.directory);
-    var notes = <Note>[];
-    for (var file in files) {
-      var title = file.name;
-      var path = file.path;
-      var lastUpdate = file.mTime;
-      if (title == null ||
-          !title.endsWith('.norg') ||
-          path == null ||
-          lastUpdate == null) {
-        continue;
-      }
-      var content = utf8.decode(await client.read(path));
-      notes.add(Note(content: content, path: path, lastUpdate: lastUpdate));
-    }
-    notes.sort(
-        (first, second) => -first.lastUpdate.compareTo(second.lastUpdate));
-    return notes;
+    await storage.syncFiles();
+    notes = await storage.getNotes();
+    setState(() {
+      _notes = notes;
+      _selectedNotes = {};
+    });
   }
 }
 
