@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neorganizer/bottom_bar.dart';
 import 'package:neorganizer/note_list.dart';
 import 'package:neorganizer/settings.dart';
@@ -50,7 +51,8 @@ class _NoteEditorRouteState extends State<NoteEditorRoute> {
   }
 
   Future<void> updateNote() async {
-    var settings = await WebDavSettingsStorage.loadSettings();
+    var storage = GetIt.I.get<WebDavSettingsStorage>();
+    var settings = await storage.loadSettings();
     var client = newClient(settings.address,
         user: settings.username, password: settings.password);
     await client.write(widget.note.path, utf8.encode(_controller.text));

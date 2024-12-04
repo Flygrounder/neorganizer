@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:neorganizer/files.dart';
 import 'package:neorganizer/note_editor.dart';
 import 'package:neorganizer/settings.dart';
@@ -42,8 +43,8 @@ class _NoteListRouteState extends State<NoteListRoute> {
                     actions: [
                       TextButton(
                           onPressed: () async {
-                            var settings =
-                                await WebDavSettingsStorage.loadSettings();
+                            var storage = GetIt.I.get<WebDavSettingsStorage>();
+                            var settings = await storage.loadSettings();
                             var client = newClient(settings.address,
                                 user: settings.username,
                                 password: settings.password);
@@ -66,7 +67,8 @@ class _NoteListRouteState extends State<NoteListRoute> {
     if (_selectedNotes.isNotEmpty) {
       actions.add(IconButton(
           onPressed: () async {
-            var settings = await WebDavSettingsStorage.loadSettings();
+            var storage = GetIt.I.get<WebDavSettingsStorage>();
+            var settings = await storage.loadSettings();
             var notes = _selectedNotes;
             var deleteFutures = notes.keys.map((note) {
               var client = newClient(settings.address,
@@ -149,8 +151,9 @@ class _NoteListRouteState extends State<NoteListRoute> {
                       actions: [
                         TextButton(
                             onPressed: () async {
-                              var settings =
-                                  await WebDavSettingsStorage.loadSettings();
+                              var storage =
+                                  GetIt.I.get<WebDavSettingsStorage>();
+                              var settings = await storage.loadSettings();
                               var title = "${titleController.text}.norg";
                               if (context.mounted) {
                                 Navigator.push(
@@ -180,8 +183,11 @@ class _NoteListRouteState extends State<NoteListRoute> {
   }
 
   static Future<List<Note>> fetchNotes() async {
-    LocalFileStorage.syncFiles();
-    var settings = await WebDavSettingsStorage.loadSettings();
+    var noteStorage = GetIt.I.get<NoteStorage>();
+    await noteStorage.syncFiles();
+
+    var webDavSettingsStorage = GetIt.I.get<WebDavSettingsStorage>();
+    var settings = await webDavSettingsStorage.loadSettings();
     var client = newClient(
       settings.address,
       user: settings.username,

@@ -4,22 +4,25 @@ import 'package:neorganizer/settings.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webdav_client/webdav_client.dart';
 
-class LocalFileStorage {
-  static var isSyncing = false;
+class NoteStorage {
+  WebDavSettingsStorage webDavSettingsStorage;
+  bool isSyncing = false;
 
-  static Future<void> syncFiles() async {
+  NoteStorage({required this.webDavSettingsStorage});
+
+  Future<void> syncFiles() async {
     if (isSyncing) {
       return;
     }
     isSyncing = true;
-    var settings = await WebDavSettingsStorage.loadSettings();
+    var settings = await webDavSettingsStorage.loadSettings();
     var webdavClient = newClient(settings.address,
         user: settings.username, password: settings.password);
     _syncFilesRecursive(settings.directory, webdavClient, settings.directory);
     isSyncing = false;
   }
 
-  static void _syncFilesRecursive(
+  void _syncFilesRecursive(
       String currentDirectory, Client webdavClient, String baseDir) async {
     for (var entry in await webdavClient.readDir(currentDirectory)) {
       var path = entry.path;
@@ -42,7 +45,7 @@ class LocalFileStorage {
     }
   }
 
-  static Future<String> _getSyncDirectory() async {
+  Future<String> _getSyncDirectory() async {
     var supportDirectory = (await getExternalStorageDirectory())!.path;
     return "$supportDirectory/Sync";
   }
